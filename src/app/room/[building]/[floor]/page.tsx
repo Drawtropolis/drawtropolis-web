@@ -59,7 +59,7 @@ export default async function FloorPage({
       <Link
         key={roomNumber}
         href={`/room/${buildingId}/${floorNumber}/${roomNumber}`}
-        className={`aspect-square flex items-center justify-center rounded-lg text-sm sm:text-base font-medium border transition-all hover:scale-105 hover:opacity-90 ${
+        className={`aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg lg:text-xl font-medium border transition-all hover:scale-105 hover:opacity-90 ${
           claimed
             ? "border-[var(--foreground)] bg-[var(--panel)] shadow-sm"
             : "border-[var(--border)] text-[var(--muted)]"
@@ -78,7 +78,7 @@ export default async function FloorPage({
 
   return (
     <main
-      className="min-h-screen p-8 max-w-3xl mx-auto"
+      className="min-h-screen p-8 sm:p-12 max-w-5xl mx-auto"
       style={districtBackground(buildingRow?.collection)}
     >
       <Link
@@ -88,28 +88,28 @@ export default async function FloorPage({
         &larr; Back to {buildingRow?.name ?? `Building ${buildingId}`}
       </Link>
 
-      <div className="mt-4 mb-8">
+      <div className="mt-5 mb-10">
         {buildingRow?.collection && (
           <p
-            className="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase"
+            className="text-4xl sm:text-5xl font-extrabold tracking-tight uppercase"
             style={{ color: theme?.accent ?? "var(--foreground)" }}
           >
             {buildingRow.collection}
           </p>
         )}
-        <h1 className="text-xl sm:text-2xl font-semibold mt-1">
+        <h1 className="text-2xl sm:text-3xl font-semibold mt-2">
           {buildingRow?.name ?? `Building ${buildingId}`}
         </h1>
-        <p className="text-base sm:text-lg text-[var(--muted)] mt-0.5">
+        <p className="text-lg sm:text-xl text-[var(--muted)] mt-1">
           Floor {floorNumber}
         </p>
-        <p className="text-sm sm:text-base text-[var(--muted)] mt-2">
+        <p className="text-base sm:text-lg text-[var(--muted)] mt-2">
           Coordinate prefix: {formatCoordinate(buildingId, floorNumber, 0).slice(0, -3)}
           xx
         </p>
       </div>
 
-      <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+      <div className="grid grid-cols-10 gap-2 sm:gap-3">
         {rooms.map(roomLink)}
       </div>
     </main>

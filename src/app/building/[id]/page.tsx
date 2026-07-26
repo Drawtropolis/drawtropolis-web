@@ -96,13 +96,21 @@ export default async function BuildingPage({
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      {/* Sized in viewport-height units, not aspect-ratio, so the facade
-          reliably fills roughly half the screen regardless of window
-          shape — an aspect-[3/2] box scales strictly off the container's
-          width, so on a tall/narrow window it ends up looking small
-          (Andrew's report: "just a little bit small... filling maybe 20%
-          of it") even though it's technically full width. */}
-      <div className="relative w-full h-[62vh] sm:h-[72vh] min-h-[420px] overflow-hidden">
+      {/* Reverted to aspect-[3/2] — the vh-based sizing tried here broke
+          every district's overlay alignment. gridRect/plaqueRect in
+          districtFacade.ts are percentages calibrated against this exact
+          3:2 box matching the source art's own aspect ratio, so
+          object-cover shows the whole image with zero cropping and the
+          code-drawn grid lands exactly on the baked windows underneath
+          (this is what made Crown look "perfect" — its baked numbers and
+          the real overlay numbers occupy the same cells). Changing the
+          container to vh-based sizing gave it a different aspect per
+          viewport width, so object-cover cropped a different part of the
+          image on every screen — the overlay grid stayed put, but the
+          art underneath (and Crown's baked sidebar/banner/numbers) shifted
+          out from under it. The "make it bigger" request was actually
+          about the floor page, not this one — see room/[building]/[floor]. */}
+      <div className="relative w-full aspect-[3/2] overflow-hidden">
         <Image
           src={facade.image}
           alt={facade.alt}
