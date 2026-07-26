@@ -8,14 +8,22 @@ import { createClient } from "@/lib/supabase/client";
 // sign-up flow needed: the `on_auth_user_created` trigger already creates
 // a `profiles` row automatically for any new auth.users row.
 //
-// Bug fixed 26 July 2026: emailRedirectTo used to be
+// Bug fixed 26 July 2026 (first pass): emailRedirectTo used to be
 // `window.location.origin`, so the link in the email sent you back to
 // whichever domain you happened to click "sign in" from — if Andrew
 // tested from drawtropolis-web.vercel.app, the email took him back to
-// vercel.app instead of drawtropolis.com, even though the real site is
-// the custom domain. Fixed by hardcoding the production URL so the
-// redirect is always the same regardless of which domain the sign-in
-// request came from. Same fix applied to the new Google button below.
+// vercel.app instead of drawtropolis.com. Fixed by hardcoding the
+// production URL.
+//
+// Bug fixed 26 July 2026 (second pass, the real one): hardcoding the
+// domain wasn't enough — both flows were pointing straight back at "/"
+// with the PKCE `?code=` still attached, and nothing in the app ever
+// exchanged that code for a session (see src/app/auth/callback/route.ts,
+// added in this pass). That's why sign-in looked like it worked — Google
+// consent screen or the email link both completed fine — but no actual
+// session ever got created, in every browser and every account tested.
+// Both redirects now point at /auth/callback, which does the exchange
+// and only then sends the user on to the real destination.
 //
 // Note on rate limits: Supabase's default built-in email service (no
 // custom SMTP configured) has a very low send limit — a handful of
@@ -25,7 +33,7 @@ import { createClient } from "@/lib/supabase/client";
 // wiring a custom SMTP provider (e.g. Resend, Postmark) in Supabase's
 // Auth → Emails settings — not done yet, needs Andrew's own account with
 // whichever provider he picks.
-const SITE_URL = "https://www.drawtropolis.com/";
+const AUTH_CALLBACK_URL = "https://www.drawtropolis.com/auth/callback";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -43,7 +51,7 @@ export default function SignInPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
-        emailRedirectTo: SITE_URL,
+        emailRedirectTo: AUTH_CALLBACK_URL,
       },
     });
 
@@ -61,7 +69,7 @@ export default function SignInPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: SITE_URL },
+      options: { redirectTo: AUTH_CALLBACK_URL },
     });
     // On success this navigates away to Google immediately — no further
     // state update needed. Only reachable here if it failed to even start
