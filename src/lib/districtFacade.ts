@@ -59,7 +59,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/pharaoh.png",
     alt: "Pharaoh district facade",
     gridRect: { top: 32, left: 18, width: 64, height: 52 },
-    plaqueRect: { top: 22, left: 36, width: 28, height: 5.5 },
+    plaqueRect: { top: 23.5, left: 36, width: 28, height: 5.5 },
   },
   // No facade art yet — building-page.tsx falls back to the original
   // plain grid for this district until an image is added here.
@@ -68,7 +68,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/empire.jpg",
     alt: "Empire district facade",
     gridRect: { top: 30, left: 18, width: 64, height: 58 },
-    plaqueRect: { top: 25, left: 33, width: 34, height: 7 },
+    plaqueRect: { top: 22, left: 33, width: 34, height: 7 },
   },
   Dynasty: {
     image: "/district-facades/dynasty.jpg",
@@ -86,6 +86,6 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/oasis.jpg",
     alt: "Oasis district facade",
     gridRect: { top: 30, left: 18, width: 64, height: 58 },
-    plaqueRect: { top: 25, left: 33, width: 34, height: 7 },
+    plaqueRect: { top: 22, left: 33, width: 34, height: 7 },
   },
 };
