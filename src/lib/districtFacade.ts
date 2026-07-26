@@ -80,7 +80,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/renaissance.jpg",
     alt: "Renaissance district facade",
     gridRect: { top: 30, left: 18, width: 64, height: 58 },
-    plaqueRect: { top: 25, left: 33, width: 34, height: 7 },
+    plaqueRect: { top: 22, left: 33, width: 34, height: 7 },
   },
   Oasis: {
     image: "/district-facades/oasis.jpg",
