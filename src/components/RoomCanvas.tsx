@@ -30,10 +30,22 @@ import type Konva from "konva";
 // more room to actually draw detail — mouse wheel / trackpad pinch zooms
 // around the pointer, and the +/-/Reset buttons cover the case where
 // scroll-to-zoom isn't obvious or the input device doesn't support it.
+//
+// Fixed same day: at zoom levels below 1, the 1200x800 paper shrinks
+// smaller than the 900x600 viewport, exposing the viewport's own
+// background around the edges. That background used to be dark
+// (#0a0e14) — visible and wrong ("fully zoomed out exposes black around
+// the edges. I want fully zoomed out to be fully white"). Switched to
+// white so the exposed edge always matches the paper. Max zoom raised
+// 400% -> 800% per follow-up request. Trackpad gestures also split out:
+// browsers report a two-finger pinch as a wheel event with ctrlKey set
+// (regardless of whether an actual modifier key is held), and a plain
+// two-finger scroll as a wheel event without it — so ctrlKey now decides
+// zoom vs. pan instead of every wheel event being treated as zoom.
 const BASE_WIDTH = 1200;
 const BASE_HEIGHT = 800;
 const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 4;
+const MAX_ZOOM = 8;
 const VIEWPORT_WIDTH = 900;
 const VIEWPORT_HEIGHT = 600;
 
@@ -69,10 +81,24 @@ export function RoomCanvas() {
   function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
     e.evt.preventDefault();
     const stage = stageRef.current;
-    const pointer = stage?.getPointerPosition();
-    if (!pointer) return;
-    const direction = e.evt.deltaY > 0 ? -1 : 1;
-    zoomAtPoint(clampZoom(zoom + direction * 0.15), pointer);
+    if (!stage) return;
+
+    if (e.evt.ctrlKey) {
+      // Trackpad pinch (browsers report pinch-to-zoom as a wheel event
+      // with ctrlKey set, whether or not a real modifier key is down) —
+      // zoom in/out anchored under the pointer, same as before.
+      const pointer = stage.getPointerPosition();
+      if (!pointer) return;
+      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      zoomAtPoint(clampZoom(zoom + direction * 0.15), pointer);
+    } else {
+      // Plain two-finger trackpad scroll — pan the canvas instead of
+      // zooming it, in whichever direction the fingers move.
+      setStagePos((prev) => ({
+        x: prev.x - e.evt.deltaX,
+        y: prev.y - e.evt.deltaY,
+      }));
+    }
   }
 
   function stepZoom(delta: number) {
@@ -103,7 +129,7 @@ export function RoomCanvas() {
     <div className="inline-block rounded-lg overflow-hidden shadow-lg border border-[var(--border)]">
       <div
         style={{ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }}
-        className="max-w-full overflow-hidden bg-[#0a0e14]"
+        className="max-w-full overflow-hidden bg-white"
       >
         <Stage
           ref={stageRef}
