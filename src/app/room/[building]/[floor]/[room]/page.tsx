@@ -16,7 +16,11 @@ export default async function RoomPage({
   const supabase = await createClient();
 
   const [{ data: buildingRow }, { data: roomRow }] = await Promise.all([
-    supabase.from("buildings").select("name").eq("id", buildingId).single(),
+    supabase
+      .from("buildings")
+      .select("name, is_special")
+      .eq("id", buildingId)
+      .single(),
     supabase
       .from("rooms")
       .select("id, host_user_id, visibility, claim_type, contributor_cap")
@@ -27,6 +31,15 @@ export default async function RoomPage({
   ]);
 
   const coordinate = formatCoordinate(buildingId, floorNumber, roomNumber);
+
+  // City Hall (is_special) is advertised on the homepage as "open to
+  // everyone, no claim needed" — but this page used to treat it exactly
+  // like any other unclaimed room, gating it behind sign-in + claim. That
+  // was a real bug: it's the one place a brand-new visitor would try
+  // first, and it locked them out instead of letting them straight in.
+  // Fixed: special buildings always show the canvas, no room row and no
+  // sign-in required.
+  const isOpenToEveryone = buildingRow?.is_special === true;
 
   return (
     <main className="min-h-screen p-8 max-w-3xl mx-auto">
@@ -41,7 +54,18 @@ export default async function RoomPage({
       </h1>
       <p className="text-neutral-500 mb-6 text-sm">{coordinate}</p>
 
-      {!roomRow ? (
+      {isOpenToEveryone ? (
+        <>
+          <p className="text-sm text-neutral-500 mb-4">
+            Open to everyone · no claim needed
+          </p>
+          <RoomCanvas />
+          <p className="text-xs text-neutral-400 mt-2">
+            Drawing is local-only right now — not yet saved or synced. See
+            the RoomCanvas component notes.
+          </p>
+        </>
+      ) : !roomRow ? (
         <div className="border border-dashed rounded p-6 text-center">
           <p className="text-neutral-500 mb-4">
             This room hasn&apos;t been claimed yet.

@@ -24,10 +24,28 @@ import { HeroSearch } from "@/components/HeroSearch";
 // Second fix (same session): each card used to be ONE big link to the
 // first building in that collection, so every name in e.g. the Dynasty
 // card routed to "Ming" no matter which name you actually clicked. Fixed
-// by splitting each card into one invisible link strip per building name,
-// stacked to match the row positions in the baked artwork (header band
-// ~24% of card height, remaining rows split evenly — matches every card
-// crop checked while measuring positions).
+// by splitting each card into one invisible link strip per building name.
+// First attempt at row placement used one shared header-fraction (24%) +
+// even division of the remaining card height across all rows. That was
+// wrong: it silently assumed the 10 names fill the card exactly down to
+// its bottom edge, when really there's leftover padding below the last
+// name — so the computed row height came out too tall, and the error
+// compounded down each card. By the 8th-9th name (e.g. clicking "Bamboo"
+// in Dynasty) the box had drifted a full row or two off, landing on the
+// wrong building. Reported by Andrew: "top of the list is nearly right,
+// bottom is a few out."
+//
+// Third fix (same session): re-measured every card directly from the
+// baked PNG pixels — not eyeballed, not a shared assumption. Used
+// in-browser canvas pixel analysis (per-row brightness scan, isolating
+// near-white low-saturation pixels to separate text from the colourful
+// background art bleeding through each translucent card) to find the
+// actual y-position of the first name row and the last name row in each
+// card. Every card has exactly 10 names. Row pitch is derived per card
+// from (lastRowTop - firstRowTop) / 9 — anchored to two real measured
+// points instead of a shared guess — and each row's clickable box is a
+// full, zero-gap tile of that pitch (per Andrew's request: better to
+// fully cover the text with no dead gaps than to under-size the box).
 //
 // This whole "one mega image + overlay" approach is a stopgap. Andrew's
 // proposed asset architecture — one reusable background image per
@@ -50,9 +68,29 @@ const COLLECTION_LAYOUT: Record<string, Rect> = {
   Oasis: { top: 70.1, left: 85.2, width: 14.3, height: 16.3 },
 };
 
-// Fraction of each card's height taken up by the icon+title band before
-// the name list starts — measured off the Crown card crop, applied as a
-// shared default since every card uses the same template.
+// Per-card row anchors — measured, not shared. rowTopFrac is where row 0's
+// clickable box starts (as a fraction of the card's own height); pitchFrac
+// is the height of one row tile (also as a fraction of card height). Both
+// derived from real pixel measurements of the first and last name row in
+// each card (see note above). Used only when a card has exactly 10 names,
+// matching what was measured — anything else falls back to the generic
+// header-fraction formula below so the page never breaks if the seed data
+// changes.
+const ROW_ANCHORS: Record<string, { rowTopFrac: number; pitchFrac: number }> = {
+  Crown: { rowTopFrac: 0.2205, pitchFrac: 0.0668 },
+  Olympus: { rowTopFrac: 0.196, pitchFrac: 0.0754 },
+  Liberty: { rowTopFrac: 0.1933, pitchFrac: 0.0833 },
+  Sakura: { rowTopFrac: 0.1884, pitchFrac: 0.0751 },
+  Pharaoh: { rowTopFrac: 0.1858, pitchFrac: 0.0783 },
+  Valhalla: { rowTopFrac: 0.1967, pitchFrac: 0.0715 },
+  Empire: { rowTopFrac: 0.1708, pitchFrac: 0.0783 },
+  Dynasty: { rowTopFrac: 0.2094, pitchFrac: 0.0789 },
+  Renaissance: { rowTopFrac: 0.1955, pitchFrac: 0.0739 },
+  Oasis: { rowTopFrac: 0.1803, pitchFrac: 0.0825 },
+};
+
+// Fallback only — used if a card ever has a different number of names
+// than the 10 that were measured.
 const HEADER_FRACTION = 0.24;
 
 const CITY_HALL_RECT: Rect = { top: 37.1, left: 41.8, width: 16.8, height: 21 };
@@ -127,22 +165,37 @@ export default async function Home() {
         {Array.from(collections.entries()).map(([name, list]) => {
           const rect = COLLECTION_LAYOUT[name];
           if (!rect || list.length === 0) return null;
+
+          const anchors = ROW_ANCHORS[name];
+          const useMeasured = anchors && list.length === 10;
+
+          // Measured path: each row is a full-height tile of pitchFrac,
+          // starting at rowTopFrac — anchored to the real first/last name
+          // pixel positions in this specific card (see ROW_ANCHORS note).
+          // Fallback path: old generic header-fraction + even split,
+          // only used if this collection doesn't have exactly 10 names.
           const headerHeight = rect.height * HEADER_FRACTION;
-          const rowHeight = (rect.height - headerHeight) / list.length;
+          const fallbackRowHeight = (rect.height - headerHeight) / list.length;
+
           return (
             <div key={name} style={pct(rect)} className="absolute z-20">
-              {list.map((b, i) => (
-                <Link
-                  key={b.id}
-                  href={`/building/${b.id}`}
-                  aria-label={b.name}
-                  className="absolute left-0 w-full"
-                  style={{
-                    top: `${(headerHeight + i * rowHeight) / rect.height * 100}%`,
-                    height: `${rowHeight / rect.height * 100}%`,
-                  }}
-                />
-              ))}
+              {list.map((b, i) => {
+                const topPct = useMeasured
+                  ? (anchors.rowTopFrac + i * anchors.pitchFrac) * 100
+                  : ((headerHeight + i * fallbackRowHeight) / rect.height) * 100;
+                const heightPct = useMeasured
+                  ? anchors.pitchFrac * 100
+                  : (fallbackRowHeight / rect.height) * 100;
+                return (
+                  <Link
+                    key={b.id}
+                    href={`/building/${b.id}`}
+                    aria-label={b.name}
+                    className="absolute left-0 w-full"
+                    style={{ top: `${topPct}%`, height: `${heightPct}%` }}
+                  />
+                );
+              })}
             </div>
           );
         })}
