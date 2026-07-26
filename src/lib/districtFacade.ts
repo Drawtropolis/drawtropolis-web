@@ -46,20 +46,20 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
   Olympus: {
     image: "/district-facades/olympus.jpg",
     alt: "Olympus district facade",
-    gridRect: { top: 28, left: 18, width: 64, height: 52 },
-    plaqueRect: { top: 30, left: 38, width: 24, height: 9 },
+    gridRect: { top: 32, left: 18, width: 64, height: 52 },
+    plaqueRect: { top: 15.5, left: 36, width: 28, height: 6 },
   },
   Sakura: {
     image: "/district-facades/sakura.jpg",
     alt: "Sakura district facade",
-    gridRect: { top: 28, left: 18, width: 64, height: 52 },
-    plaqueRect: { top: 30, left: 38, width: 24, height: 9 },
+    gridRect: { top: 32, left: 18, width: 64, height: 52 },
+    plaqueRect: { top: 15.5, left: 36, width: 28, height: 6 },
   },
   Pharaoh: {
     image: "/district-facades/pharaoh.jpg",
     alt: "Pharaoh district facade",
-    gridRect: { top: 28, left: 18, width: 64, height: 52 },
-    plaqueRect: { top: 30, left: 38, width: 24, height: 9 },
+    gridRect: { top: 32, left: 18, width: 64, height: 52 },
+    plaqueRect: { top: 15.5, left: 36, width: 28, height: 6 },
   },
   // No facade art yet — building-page.tsx falls back to the original
   // plain grid for this district until an image is added here.

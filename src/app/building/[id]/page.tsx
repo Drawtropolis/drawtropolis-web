@@ -150,7 +150,7 @@ export default async function BuildingPage({
               href={`/room/${building.id}/${floor}`}
               className="flex items-center justify-center m-[1px] rounded-sm font-semibold transition-[filter] hover:brightness-125"
               style={{
-                background: "rgba(8, 12, 20, 0.74)",
+                background: "#0a0e14",
                 color: accent,
                 border: `1px solid ${accent}55`,
                 fontSize: "clamp(8px, 1vw, 13px)",
