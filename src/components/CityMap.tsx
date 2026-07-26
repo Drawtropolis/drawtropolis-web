@@ -64,9 +64,12 @@ export function CityMap({
   return (
     <div
       className="relative w-full aspect-[3/2] overflow-hidden rounded-2xl border border-[var(--border)]"
-      onClick={(e) => {
-        // Click anywhere outside a district's own button/ring closes it.
-        if (e.target === e.currentTarget) setOpenDistrict(null);
+      onClick={() => {
+        // Click anywhere on the map closes whatever's open. The district
+        // button and each building pill call stopPropagation so their own
+        // clicks (toggle open / navigate) don't immediately get cancelled
+        // by this same handler firing on the way up.
+        setOpenDistrict(null);
       }}
     >
       <Image
@@ -126,7 +129,10 @@ export function CityMap({
             <div className="group relative">
               <button
                 type="button"
-                onClick={() => setOpenDistrict(isOpen ? null : name)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenDistrict(isOpen ? null : name);
+                }}
                 className="rounded-full bg-black/65 group-hover:bg-black/85 group-hover:scale-105 text-white text-[11px] sm:text-sm font-bold uppercase tracking-wide px-3 sm:px-4 py-1 sm:py-1.5 shadow-lg transition-all backdrop-blur-sm border whitespace-nowrap"
                 style={{ borderColor: theme?.accent ?? "rgba(255,255,255,0.3)" }}
               >
@@ -165,8 +171,15 @@ export function CityMap({
                             let someone navigate straight to "building 45".
                             Hovering a name pill reveals its real number so
                             the ring works as coordinate navigation, not
-                            just a name index. */}
-                        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 whitespace-nowrap rounded bg-black/85 text-white text-[10px] px-2 py-1 opacity-0 group-hover/bldg:opacity-100 transition-opacity z-10">
+                            just a name index. Rendered above the pill
+                            (not below) for every pill in the ring — the
+                            topmost pill sits close to the container edge,
+                            so a below-anchored tooltip had nowhere to
+                            render and got clipped/overlapped by its
+                            neighbours either side. Above is clear on all
+                            of them since the ring itself points outward
+                            from the district centre. */}
+                        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1 whitespace-nowrap rounded bg-black/85 text-white text-[10px] px-2 py-1 opacity-0 group-hover/bldg:opacity-100 transition-opacity z-10">
                           Explore building {buildingNumber}
                         </span>
                       </div>
