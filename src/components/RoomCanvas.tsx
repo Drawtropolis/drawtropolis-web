@@ -42,12 +42,46 @@ import type Konva from "konva";
 // (regardless of whether an actual modifier key is held), and a plain
 // two-finger scroll as a wheel event without it — so ctrlKey now decides
 // zoom vs. pan instead of every wheel event being treated as zoom.
-const BASE_WIDTH = 1200;
-const BASE_HEIGHT = 800;
+//
+// Canvas enlarged again + bounded same day: once panning worked, the
+// paper had no visible edge and the surrounding viewport was the same
+// white as the paper itself — panning far enough in any direction just
+// looked like more blank paper forever, with no way to find a corner
+// ("I kept drawing a line to the top left corner and I never got to the
+// edge... does it go on forever?"). Two fixes: (1) the paper now has a
+// visible stroke around it, so its actual boundary is always visible
+// regardless of zoom or background colour; (2) panning is clamped
+// (`clampStagePos`) so the paper can never be dragged out of view
+// entirely — it stops at its own edge, like a bounded map, instead of
+// scrolling into empty space indefinitely. Base canvas size tripled
+// (1200x800 -> 3600x2400, same 3:2 ratio as the viewport) at the same
+// time — Andrew wants a large, walkable canvas with real corners to
+// find, not just a slightly bigger sticky note, and the combination of
+// this size with 800% max zoom means you can zoom deep into any corner
+// and still draw fine detail there.
+const BASE_WIDTH = 3600;
+const BASE_HEIGHT = 2400;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 8;
 const VIEWPORT_WIDTH = 900;
 const VIEWPORT_HEIGHT = 600;
+
+// Clamp panning so the paper's own edge is the farthest you can scroll —
+// once BASE_WIDTH/HEIGHT * zoom exceeds the viewport (true across the
+// whole zoom range given how much larger the canvas is than the
+// viewport), 0 is the left/top-most valid position and
+// VIEWPORT - BASE*zoom is the right/bottom-most.
+function clampStagePos(
+  pos: { x: number; y: number },
+  zoomLevel: number,
+): { x: number; y: number } {
+  const minX = VIEWPORT_WIDTH - BASE_WIDTH * zoomLevel;
+  const minY = VIEWPORT_HEIGHT - BASE_HEIGHT * zoomLevel;
+  return {
+    x: Math.min(0, Math.max(minX, pos.x)),
+    y: Math.min(0, Math.max(minY, pos.y)),
+  };
+}
 
 export function RoomCanvas() {
   const [lines, setLines] = useState<number[][]>([]);
@@ -72,10 +106,15 @@ export function RoomCanvas() {
       y: (pointer.y - stage.y()) / oldZoom,
     };
     setZoom(newZoom);
-    setStagePos({
-      x: pointer.x - mousePointTo.x * newZoom,
-      y: pointer.y - mousePointTo.y * newZoom,
-    });
+    setStagePos(
+      clampStagePos(
+        {
+          x: pointer.x - mousePointTo.x * newZoom,
+          y: pointer.y - mousePointTo.y * newZoom,
+        },
+        newZoom,
+      ),
+    );
   }
 
   function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
@@ -93,11 +132,15 @@ export function RoomCanvas() {
       zoomAtPoint(clampZoom(zoom + direction * 0.15), pointer);
     } else {
       // Plain two-finger trackpad scroll — pan the canvas instead of
-      // zooming it, in whichever direction the fingers move.
-      setStagePos((prev) => ({
-        x: prev.x - e.evt.deltaX,
-        y: prev.y - e.evt.deltaY,
-      }));
+      // zooming it, in whichever direction the fingers move. Clamped so
+      // panning stops at the paper's own edge rather than continuing
+      // into empty viewport space forever.
+      setStagePos((prev) =>
+        clampStagePos(
+          { x: prev.x - e.evt.deltaX, y: prev.y - e.evt.deltaY },
+          zoom,
+        ),
+      );
     }
   }
 
@@ -159,7 +202,15 @@ export function RoomCanvas() {
           onMouseUp={() => setDrawing(false)}
         >
           <Layer>
-            <Rect x={0} y={0} width={BASE_WIDTH} height={BASE_HEIGHT} fill="#ffffff" />
+            <Rect
+              x={0}
+              y={0}
+              width={BASE_WIDTH}
+              height={BASE_HEIGHT}
+              fill="#ffffff"
+              stroke="#2a2a2a"
+              strokeWidth={6}
+            />
             {lines.map((points, i) => (
               <Line
                 key={i}
