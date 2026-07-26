@@ -106,6 +106,12 @@ export function CityMap({
         const isOpen = openDistrict === name;
         const theme = getDistrictTheme(name);
         const ringRadius = 120;
+        // Buildings are numbered 0-99 globally, ten per district in a
+        // contiguous block (Crown 00-09, Olympus 10-19, ... Oasis 90-99).
+        // The district's own number is just that block's tens digit —
+        // derived from the first building's id so it's never hand-typed
+        // and can't drift out of sync with the real data.
+        const districtNumber = Math.floor(list[0].id / 10);
 
         return (
           <div
@@ -129,7 +135,7 @@ export function CityMap({
 
               {!isOpen && (
                 <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 whitespace-nowrap rounded bg-black/80 text-white text-[10px] px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Explore this district
+                  Explore district {districtNumber}
                 </span>
               )}
 
@@ -139,18 +145,31 @@ export function CityMap({
                     const angle = (i / list.length) * 2 * Math.PI - Math.PI / 2;
                     const x = Math.round(Math.cos(angle) * ringRadius);
                     const y = Math.round(Math.sin(angle) * ringRadius);
+                    const buildingNumber = String(b.id).padStart(2, "0");
                     return (
-                      <Link
+                      <div
                         key={b.id}
-                        href={`/building/${b.id}`}
-                        className="absolute rounded-full border bg-[#0a1220]/95 text-white text-[10px] sm:text-[11px] font-medium px-2.5 py-1 shadow-lg hover:bg-black whitespace-nowrap transition-colors"
+                        className="group/bldg absolute"
                         style={{
                           transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
-                          borderColor: theme?.accent ?? "rgba(255,255,255,0.3)",
                         }}
                       >
-                        {b.name}
-                      </Link>
+                        <Link
+                          href={`/building/${b.id}`}
+                          className="block rounded-full border bg-[#0a1220]/95 text-white text-[10px] sm:text-[11px] font-medium px-2.5 py-1 shadow-lg hover:bg-black whitespace-nowrap transition-colors"
+                          style={{ borderColor: theme?.accent ?? "rgba(255,255,255,0.3)" }}
+                        >
+                          {b.name}
+                        </Link>
+                        {/* Numeric guide — the building name alone doesn't
+                            let someone navigate straight to "building 45".
+                            Hovering a name pill reveals its real number so
+                            the ring works as coordinate navigation, not
+                            just a name index. */}
+                        <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1 whitespace-nowrap rounded bg-black/85 text-white text-[10px] px-2 py-1 opacity-0 group-hover/bldg:opacity-100 transition-opacity z-10">
+                          Explore building {buildingNumber}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
