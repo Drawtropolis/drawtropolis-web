@@ -41,7 +41,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/liberty.png",
     alt: "Liberty district facade",
     gridRect: { top: 27, left: 15, width: 70, height: 52 },
-    plaqueRect: { top: 13.5, left: 35, width: 30, height: 5 },
+    plaqueRect: { top: 16.5, left: 35, width: 30, height: 5 },
   },
   Olympus: {
     image: "/district-facades/olympus.jpg",
@@ -74,7 +74,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/dynasty.jpg",
     alt: "Dynasty district facade",
     gridRect: { top: 30, left: 18, width: 64, height: 58 },
-    plaqueRect: { top: 21, left: 33, width: 34, height: 7 },
+    plaqueRect: { top: 23, left: 33, width: 34, height: 7 },
   },
   Renaissance: {
     image: "/district-facades/renaissance.jpg",
