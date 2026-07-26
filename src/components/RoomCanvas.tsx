@@ -61,7 +61,15 @@ import type Konva from "konva";
 // and still draw fine detail there.
 const BASE_WIDTH = 3600;
 const BASE_HEIGHT = 2400;
-const MIN_ZOOM = 0.5;
+// MIN_ZOOM lowered 0.5 -> 0.25 same day: at 50% the viewport only ever
+// showed one quarter of the 3600x2400 canvas (900x600 viewport / 0.5 =
+// 1800x1200 of canvas visible), so panning around at that zoom felt like
+// there were "four full squares" and no way to see them all at once.
+// 25% is the exact fit — 3600*0.25 = 900 and 2400*0.25 = 600, matching
+// the viewport exactly — so this is the natural "whole canvas visible"
+// zoom level, not an arbitrary extra step. Nothing else changed: canvas
+// size, panning clamp, and max zoom are untouched.
+const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 8;
 const VIEWPORT_WIDTH = 900;
 const VIEWPORT_HEIGHT = 600;
