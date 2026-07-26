@@ -3,7 +3,8 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { formatCoordinate } from "@/lib/types";
 import { ClaimRoomButton } from "@/components/ClaimRoomButton";
-import { RoomCanvas } from "@/components/RoomCanvasLoader";
+import { RoomCanvas } from "@/components/RoomCanvasLoader"; // still used by the isOpenToEveryone (City Hall) branch above
+import { ClaimedRoomView } from "@/components/ClaimedRoomView";
 import { getDistrictTheme, districtBackground } from "@/lib/districtTheme";
 
 // Door/plaque redesign — 26 July 2026. The room page used to be a plain
@@ -146,6 +147,36 @@ export default async function RoomPage({
     );
   }
 
+  // Claimed rooms get their own view (ClaimedRoomView) rather than sharing
+  // this narrow 420px door card. Bug fixed 26 July 2026: the canvas used to
+  // render directly under the plaque inside this card and visibly bled out
+  // past its edges (RoomCanvas is 900px wide). Fix, requested the same
+  // night: the plaque itself is now the only way in — click it, and the
+  // view swaps to a wide layout ("same size and settings as City Hall") —
+  // no canvas exists in the DOM at all until that click happens.
+  if (roomRow) {
+    return (
+      <main
+        className="min-h-screen p-8 flex flex-col items-center"
+        style={districtBackground(buildingRow?.collection)}
+      >
+        <ClaimedRoomView
+          backHref={`/room/${buildingId}/${floorNumber}`}
+          collection={buildingRow?.collection}
+          accentColor={theme?.accent}
+          buildingName={buildingRow?.name}
+          floorNumber={floorNumber}
+          coordinate={coordinate}
+          claimantName={claimantName}
+          claimedAtLabel={roomRow.created_at ? formatClaimedAt(roomRow.created_at) : null}
+          visibilityLabel={roomRow.visibility === "locked" ? "Locked" : "Open"}
+          claimType={roomRow.claim_type}
+          contributorCap={roomRow.contributor_cap}
+        />
+      </main>
+    );
+  }
+
   return (
     <main
       className="min-h-screen p-8 flex flex-col items-center"
@@ -188,90 +219,39 @@ export default async function RoomPage({
             {coordinate}
           </p>
 
-          {!roomRow ? (
-            // Unclaimed plaque — dull pewter. Deliberately theme-independent:
-            // a plaque doesn't take on the district's colour, only its own
-            // finish. Local CSS-variable overrides give ClaimRoomButton
-            // (which is styled with --border/--panel and relies on inherited
-            // text colour) a fixed light-on-dark palette so it reads clearly
-            // against pewter regardless of the site's light/dark mode.
-            <div
-              className="mt-10 rounded-md px-6 py-7"
-              style={{
-                background:
-                  "linear-gradient(180deg, #4a5058 0%, #363b42 55%, #2b2f35 100%)",
-                boxShadow:
-                  "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 5px rgba(0,0,0,0.35), 0 6px 14px rgba(0,0,0,0.3)",
-                border: "1px solid #22262b",
-                // Scoped overrides for ClaimRoomButton's own var(--*) classes.
-                ["--foreground" as string]: "#f2f2f2",
-                ["--panel" as string]: "#1c2129",
-                ["--border" as string]: "rgba(255,255,255,0.35)",
-                ["--muted" as string]: "#c7cdd6",
-              }}
-            >
-              <p className="text-sm text-[#e5e8ec] mb-4">
-                This room hasn&apos;t been claimed yet.
-              </p>
-              <Suspense fallback={null}>
-                <ClaimRoomButton
-                  buildingId={buildingId}
-                  floorNumber={floorNumber}
-                  roomNumber={roomNumber}
-                  claimType="standard"
-                />
-              </Suspense>
-            </div>
-          ) : (
-            <>
-              {/* Claimed plaque — polished brass, engraved-plate styling. */}
-              <div
-                className="mt-10 rounded-md px-6 py-6"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #ecd9a0 0%, #c9a24c 45%, #a9813a 100%)",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -2px 5px rgba(0,0,0,0.25), 0 6px 14px rgba(0,0,0,0.35)",
-                  border: "1px solid #8a6b30",
-                }}
-              >
-                <p
-                  className="text-[11px] uppercase tracking-[0.25em]"
-                  style={{ color: "#4a3a16", opacity: 0.75 }}
-                >
-                  Claimed by
-                </p>
-                <p
-                  className="text-2xl font-semibold mt-1"
-                  style={{
-                    color: "#2b2008",
-                    fontFamily: "Georgia, 'Times New Roman', serif",
-                    textShadow: "0 1px 0 rgba(255,255,255,0.4)",
-                  }}
-                >
-                  {claimantName}
-                </p>
-                {roomRow.created_at && (
-                  <p
-                    className="text-xs mt-2 tracking-wide"
-                    style={{ color: "#4a3a16", opacity: 0.85 }}
-                  >
-                    {formatClaimedAt(roomRow.created_at)}
-                  </p>
-                )}
-              </div>
-
-              <p className="text-sm text-[var(--muted)] mt-5 mb-4">
-                {roomRow.visibility === "locked" ? "Locked" : "Open"} ·{" "}
-                {roomRow.claim_type} · cap {roomRow.contributor_cap}
-              </p>
-              <RoomCanvas />
-              <p className="text-xs text-[var(--muted)] mt-2">
-                Drawing is local-only right now — not yet saved or synced.
-                See the RoomCanvas component notes.
-              </p>
-            </>
-          )}
+          {/* Unclaimed plaque — dull pewter. Deliberately theme-independent:
+              a plaque doesn't take on the district's colour, only its own
+              finish. Local CSS-variable overrides give ClaimRoomButton
+              (which is styled with --border/--panel and relies on inherited
+              text colour) a fixed light-on-dark palette so it reads clearly
+              against pewter regardless of the site's light/dark mode. */}
+          <div
+            className="mt-10 rounded-md px-6 py-7"
+            style={{
+              background:
+                "linear-gradient(180deg, #4a5058 0%, #363b42 55%, #2b2f35 100%)",
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -2px 5px rgba(0,0,0,0.35), 0 6px 14px rgba(0,0,0,0.3)",
+              border: "1px solid #22262b",
+              // Scoped overrides for ClaimRoomButton's own var(--*) classes.
+              ["--foreground" as string]: "#f2f2f2",
+              ["--panel" as string]: "#1c2129",
+              ["--border" as string]: "rgba(255,255,255,0.35)",
+              ["--muted" as string]: "#c7cdd6",
+            }}
+          >
+            <p className="text-sm text-[#e5e8ec] mb-4">
+              This room hasn&apos;t been claimed yet.
+            </p>
+            <Suspense fallback={null}>
+              <ClaimRoomButton
+                buildingId={buildingId}
+                floorNumber={floorNumber}
+                roomNumber={roomNumber}
+                claimType="standard"
+              />
+            </Suspense>
+          </div>
         </div>
       </div>
     </main>
