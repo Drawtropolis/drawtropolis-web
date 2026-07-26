@@ -40,7 +40,7 @@ export default async function Home() {
       {/* Real top bar — logo, title, search, sign-in. Independent of the
           city artwork entirely, so it never fights with what's underneath
           it and never depends on where the art happens to paint anything. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 max-w-6xl mx-auto">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 sm:px-4 py-4 max-w-[1800px] mx-auto">
         <div className="flex items-center gap-3">
           <Image
             src="/drawtropolis-logo.png"
@@ -72,8 +72,8 @@ export default async function Home() {
         </div>
       </div>
 
-      {/* The city itself */}
-      <div className="px-4 sm:px-6 pb-10 max-w-6xl mx-auto">
+      {/* The city itself — nearly full-bleed, minimal margin either side */}
+      <div className="px-2 sm:px-3 pb-6 max-w-[1800px] mx-auto">
         <CityMap buildings={allBuildings} cityHall={cityHall} />
       </div>
     </main>

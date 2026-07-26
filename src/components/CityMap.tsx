@@ -100,7 +100,13 @@ export function CityMap({
         </div>
       )}
 
-      {/* District labels — hover reveals "Explore this district", click opens the building list */}
+      {/* District labels — hover reveals "Explore this district", click opens the building list.
+          Circular bubbles per Andrew's feedback (was an oval pill before).
+          The open district gets bumped to z-40 — with every district at the
+          same base layer, whichever one happened to come later in the list
+          (e.g. Valhalla after Pharaoh) would paint on top of a neighbour's
+          open card. Bumping only the open one above the rest fixes that
+          without needing to reorder anything. */}
       {Array.from(collections.entries()).map(([name, list]) => {
         const rect = DISTRICT_LABEL_RECT[name];
         if (!rect || list.length === 0) return null;
@@ -110,14 +116,14 @@ export function CityMap({
         return (
           <div
             key={name}
-            className="absolute z-20 flex flex-col items-center justify-end pb-2 pointer-events-none"
-            style={pct(rect)}
+            className="absolute flex flex-col items-center justify-end pb-2 pointer-events-none"
+            style={{ ...pct(rect), zIndex: isOpen ? 40 : 20 }}
           >
             <div className="group relative pointer-events-auto">
               <button
                 type="button"
                 onClick={() => setOpenDistrict(isOpen ? null : name)}
-                className="rounded-full bg-black/60 group-hover:bg-black/80 group-hover:scale-105 text-white text-[11px] sm:text-sm font-bold uppercase tracking-wide px-3 sm:px-4 py-1 sm:py-1.5 shadow-lg transition-all backdrop-blur-sm border"
+                className="flex items-center justify-center text-center rounded-full bg-black/65 group-hover:bg-black/85 group-hover:scale-105 text-white font-bold uppercase leading-tight shadow-lg transition-all backdrop-blur-sm border w-16 h-16 sm:w-20 sm:h-20 text-[9px] sm:text-[11px] p-1"
                 style={{ borderColor: theme?.accent ?? "rgba(255,255,255,0.3)" }}
               >
                 {name}
