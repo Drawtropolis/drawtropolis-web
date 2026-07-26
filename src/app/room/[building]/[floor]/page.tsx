@@ -2,11 +2,16 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatCoordinate } from "@/lib/types";
 
-// One floor: central lobby (implied, not rendered yet) + 100 rooms.
-// Outer corridor = even numbers 00-98 (56 rooms), inner corridor = odd
-// numbers 01-99 (44 rooms), per WORLD_ARCHITECTURE doctrine. Claimed rooms
-// are the ones that actually have a row in `rooms` — everything else is
-// just an address waiting to be claimed.
+// One floor: central lobby (implied, not rendered yet) + 100 rooms,
+// numbered 00-99 only — never three digits (matches the `rooms.room_number
+// between 0 and 99` DB constraint). Outer corridor = even 00-98 (50
+// rooms), inner corridor = odd 01-99 (50 rooms). Bug fixed 26 July 2026:
+// this used to generate length:56/44, which is wrong arithmetic (56+44=100
+// but 0,2,...,110 in 56 steps overshoots to 110, and 1,3,...,87 in 44
+// steps stops short of 99) — corrected to the actual even/odd split,
+// length:50 each, 0-98 and 1-99. Claimed rooms are the ones that actually
+// have a row in `rooms` — everything else is just an address waiting to
+// be claimed.
 export default async function FloorPage({
   params,
 }: {
@@ -30,8 +35,8 @@ export default async function FloorPage({
     (claimedRooms ?? []).map((r) => [r.room_number, r]),
   );
 
-  const outer = Array.from({ length: 56 }, (_, i) => i * 2); // 0,2,...,98
-  const inner = Array.from({ length: 44 }, (_, i) => i * 2 + 1); // 1,3,...,99
+  const outer = Array.from({ length: 50 }, (_, i) => i * 2); // 0,2,...,98
+  const inner = Array.from({ length: 50 }, (_, i) => i * 2 + 1); // 1,3,...,99
 
   const roomLink = (roomNumber: number) => {
     const claimed = claimedByNumber.get(roomNumber);

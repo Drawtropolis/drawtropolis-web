@@ -6,47 +6,46 @@ import { HeroSearch } from "@/components/HeroSearch";
 
 // City home — redesigned 26 July 2026 to match
 // `drawtropolis landing page.png` (illustrated isometric city, provided by
-// Andrew as the target design). The background art is the real reference
-// image; everything on top of it (nav, title, City Hall panel, the 10
-// collection cards, footer strip) is real HTML/CSS positioned over it with
-// percentage-based coordinates, so it scales with the container. Positions
-// are a close approximation of the reference, not pixel-measured — worth a
-// fine-tuning pass next session if anything looks off on a real screen.
+// Andrew as the target design).
 //
-// Building names inside each collection card are pulled live from
-// Supabase (same query the old plain-list homepage used), not hardcoded,
-// so this always reflects the real seeded data.
+// IMPORTANT: the reference image is a full mockup — the title, nav badges,
+// City Hall panel, all 10 collection-card labels/name-lists, and the
+// footer feature strip are already painted into the artwork itself. The
+// first version of this page made the mistake of rendering a *second*,
+// separate set of HTML text on top of all of that, which is why it showed
+// up doubled and misaligned. Fixed by removing every duplicate visible
+// element — the image supplies 100% of the visible chrome — and replacing
+// them with invisible clickable regions (no background, no border, no
+// text) positioned over the real artwork, plus one functional search
+// input. Positions below were measured directly from the source PNG
+// (flood-fill + manual pixel crops), not eyeballed, so they should sit
+// much closer to the actual art than the first pass.
+//
+// Each collection card currently links to the first building in that
+// collection (a stand-in "enter this district" action) since there's no
+// dedicated district page yet — that's the natural Level-2 page in
+// Andrew's proposed asset architecture (district building page, reusing
+// one image per district with a blank name plaque), not built this
+// session. Swap the link target once that page exists.
 
-type CollectionLayout = {
-  top: string;
-  left: string;
-  width: string;
-  badge: string; // tailwind classes for the badge bg/border
-  label: string; // display label
+type Rect = { top: string; left: string; width: string; height: string };
+
+// Measured against the 1536x1024 reference image.
+const COLLECTION_LAYOUT: Record<string, Rect> = {
+  Crown: { top: "26.2%", left: "0.3%", width: "14.5%", height: "18.8%" },
+  Olympus: { top: "28.1%", left: "20.7%", width: "14.3%", height: "18.8%" },
+  Liberty: { top: "46.7%", left: "0.5%", width: "14%", height: "19.5%" },
+  Sakura: { top: "29.6%", left: "67.8%", width: "14.3%", height: "17.3%" },
+  Pharaoh: { top: "27.8%", left: "85.3%", width: "14.3%", height: "19.5%" },
+  Valhalla: { top: "48.3%", left: "83.9%", width: "14.3%", height: "18.1%" },
+  Empire: { top: "69.1%", left: "0.5%", width: "14%", height: "19.5%" },
+  Dynasty: { top: "67.2%", left: "33.1%", width: "13.8%", height: "21.2%" },
+  Renaissance: { top: "68.4%", left: "54.6%", width: "12%", height: "18.1%" },
+  Oasis: { top: "70.1%", left: "85.2%", width: "14.3%", height: "16.3%" },
 };
 
-// Position map approximates the reference image (1536x1024). Left/top are
-// the card's top-left corner as a percentage of the hero container.
-const COLLECTION_LAYOUT: Record<string, CollectionLayout> = {
-  Crown: { top: "26%", left: "1%", width: "13%", badge: "bg-neutral-900/90 border-amber-400/50", label: "Crown" },
-  Olympus: { top: "28%", left: "17.5%", width: "13%", badge: "bg-blue-950/90 border-blue-400/50", label: "Olympus" },
-  Liberty: { top: "47%", left: "1%", width: "13%", badge: "bg-emerald-950/90 border-emerald-400/50", label: "Liberty" },
-  Sakura: { top: "28%", left: "68%", width: "13%", badge: "bg-rose-950/90 border-rose-400/50", label: "Sakura" },
-  Pharaoh: { top: "28%", left: "85.5%", width: "13.5%", badge: "bg-amber-950/90 border-amber-400/50", label: "Pharaoh" },
-  Valhalla: { top: "47%", left: "85.5%", width: "13.5%", badge: "bg-slate-900/90 border-slate-400/50", label: "Valhalla" },
-  Empire: { top: "68%", left: "1%", width: "13%", badge: "bg-red-950/90 border-red-400/50", label: "Empire" },
-  Dynasty: { top: "68%", left: "18%", width: "13%", badge: "bg-orange-950/90 border-orange-400/50", label: "Dynasty" },
-  Renaissance: { top: "68%", left: "52%", width: "14%", badge: "bg-purple-950/90 border-purple-400/50", label: "Renaissance" },
-  Oasis: { top: "68%", left: "85.5%", width: "13.5%", badge: "bg-teal-950/90 border-teal-400/50", label: "Oasis" },
-};
-
-const FEATURES = [
-  { title: "Draw Anywhere", body: "Every room is a canvas." },
-  { title: "Draw Together", body: "Invite friends and create side by side." },
-  { title: "Explore Endlessly", body: "A million rooms. Infinite possibilities." },
-  { title: "Safe & Welcoming", body: "A positive space for everyone." },
-  { title: "Your World", body: "Save, share and leave your mark." },
-];
+const CITY_HALL_RECT: Rect = { top: "37.1%", left: "41.8%", width: "16.8%", height: "21%" };
+const SEARCH_RECT: Rect = { top: "1.8%", left: "68.5%", width: "17.5%", height: "3.9%" };
 
 export default async function Home() {
   const supabase = await createClient();
@@ -76,108 +75,47 @@ export default async function Home() {
 
   return (
     <main className="bg-[#0a1220]">
-      {/* Hero: illustrated city + overlay UI, aspect-ratio locked to the reference art */}
       <div className="relative w-full aspect-[1536/1024] overflow-hidden">
         <Image
           src="/hero-city.png"
-          alt="Drawtropolis — an illustrated city of a million rooms"
+          alt="Drawtropolis — an illustrated city of a million rooms, with ten districts: Crown, Olympus, Liberty, Sakura, Pharaoh, Valhalla, Empire, Dynasty, Renaissance and Oasis, and City Hall at the centre"
           fill
           priority
           className="object-cover object-center"
         />
 
-        {/* top nav */}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-[1.5%] py-[1.5%] z-20">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-full bg-black/45 border border-white/25 backdrop-blur-sm px-3 py-1.5 text-[10px] sm:text-xs text-white font-medium">
-              1,000,000+ Rooms
-            </span>
-            <span className="hidden sm:flex items-center gap-1.5 rounded-full bg-black/45 border border-white/25 backdrop-blur-sm px-3 py-1.5 text-[10px] sm:text-xs text-white font-medium">
-              Draw Together
-            </span>
-          </div>
-          <div className="flex items-center gap-2 w-[45%] sm:w-[35%] max-w-md">
-            <div className="flex-1">
-              <HeroSearch buildings={(buildings ?? []) as Building[]} />
-            </div>
-            <button
-              type="button"
-              title="Sign in — coming soon"
-              className="rounded-full bg-blue-600/90 hover:bg-blue-600 text-white text-[10px] sm:text-xs font-medium px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap"
-            >
-              Sign In
-            </button>
-          </div>
+        {/* functional search — transparent, sits exactly over the baked search bar art */}
+        <div
+          style={SEARCH_RECT}
+          className="absolute z-20"
+        >
+          <HeroSearch buildings={(buildings ?? []) as Building[]} transparent />
         </div>
 
-        {/* hero title */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-[6%] text-center z-20 pointer-events-none">
-          <h1 className="text-white font-bold tracking-tight text-[6vw] sm:text-[4vw] leading-none drop-shadow-lg">
-            DRAWTROPOLIS
-          </h1>
-          <p className="text-white/85 text-[1.6vw] sm:text-[1vw] mt-1 drop-shadow">
-            A million rooms. One city. Find yours.
-          </p>
-        </div>
-
-        {/* City Hall panel */}
+        {/* City Hall — invisible clickable region over the baked panel + button */}
         {cityHall && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-[36%] z-20 flex flex-col items-center gap-2">
-            <span className="rounded bg-blue-900/90 border border-blue-300/40 text-white text-[1.4vw] sm:text-[0.9vw] font-semibold px-4 py-1.5 backdrop-blur-sm">
-              City Hall
-            </span>
-            <span className="rounded bg-black/45 border border-white/20 text-white/85 text-[1vw] sm:text-[0.6vw] px-3 py-1 text-center backdrop-blur-sm">
-              Open to everyone. Draw here, no claim needed.
-            </span>
-            <Link
-              href={`/building/${cityHall.id}`}
-              className="rounded bg-blue-600/95 hover:bg-blue-600 text-white text-[1.2vw] sm:text-[0.75vw] font-semibold px-5 py-2 shadow-lg"
-            >
-              Enter City Hall
-            </Link>
-          </div>
+          <Link
+            href={`/building/${cityHall.id}`}
+            style={CITY_HALL_RECT}
+            className="absolute z-20"
+            aria-label="Enter City Hall — open to everyone, no claim needed"
+          />
         )}
 
-        {/* collection cards */}
+        {/* collection cards — invisible clickable regions over each baked panel */}
         {Array.from(collections.entries()).map(([name, list]) => {
-          const layout = COLLECTION_LAYOUT[name];
-          if (!layout) return null;
+          const rect = COLLECTION_LAYOUT[name];
+          if (!rect || list.length === 0) return null;
           return (
-            <div
+            <Link
               key={name}
-              style={{ top: layout.top, left: layout.left, width: layout.width }}
-              className={`absolute z-20 rounded border ${layout.badge} backdrop-blur-sm px-2 py-1.5 shadow-lg`}
-            >
-              <p className="text-white text-[1vw] sm:text-[0.65vw] font-semibold uppercase tracking-wide mb-1">
-                {layout.label}
-              </p>
-              <ul className="space-y-0.5">
-                {list.map((b) => (
-                  <li key={b.id}>
-                    <Link
-                      href={`/building/${b.id}`}
-                      className="block text-white/75 hover:text-white text-[0.85vw] sm:text-[0.55vw] leading-tight truncate"
-                    >
-                      {b.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              href={`/building/${list[0].id}`}
+              style={rect}
+              className="absolute z-20"
+              aria-label={`${name} district — ${list.map((b) => b.name).join(", ")}`}
+            />
           );
         })}
-
-        {/* footer feature strip */}
-        <div className="absolute inset-x-0 bottom-0 bg-black/70 backdrop-blur-sm border-t border-white/10 z-20">
-          <div className="flex flex-wrap justify-between gap-y-2 px-[2%] py-[1.2%]">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="min-w-[18%] flex-1">
-                <p className="text-white text-[1.1vw] sm:text-[0.7vw] font-semibold">{f.title}</p>
-                <p className="text-white/60 text-[0.95vw] sm:text-[0.6vw]">{f.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </main>
   );
