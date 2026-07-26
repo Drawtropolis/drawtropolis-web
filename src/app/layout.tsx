@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { UserBadge } from "@/components/UserBadge";
 
 // Deliberately not using next/font/google (Geist) — it fetches from
 // fonts.googleapis.com at build time, which fails in network-restricted
@@ -7,6 +8,7 @@ import "./globals.css";
 // not just a cosmetic font miss). System font stack costs nothing and
 // works everywhere. Swap in a self-hosted font file later if the brand
 // needs something specific — that avoids the network dependency too.
+
 // SEO metadata — this is the whole site's default title/description/social
 // preview config. Filled out properly 26 July 2026 once drawtropolis.com
 // was verified in Google Search Console and the homepage submitted for
@@ -74,7 +76,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <UserBadge />
+        {children}
+      </body>
     </html>
   );
 }
