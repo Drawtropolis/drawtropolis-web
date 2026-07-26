@@ -96,7 +96,13 @@ export default async function BuildingPage({
 
   return (
     <main className="min-h-screen bg-[var(--background)]">
-      <div className="relative w-full aspect-[3/2] overflow-hidden">
+      {/* Sized in viewport-height units, not aspect-ratio, so the facade
+          reliably fills roughly half the screen regardless of window
+          shape — an aspect-[3/2] box scales strictly off the container's
+          width, so on a tall/narrow window it ends up looking small
+          (Andrew's report: "just a little bit small... filling maybe 20%
+          of it") even though it's technically full width. */}
+      <div className="relative w-full h-[62vh] sm:h-[72vh] min-h-[420px] overflow-hidden">
         <Image
           src={facade.image}
           alt={facade.alt}

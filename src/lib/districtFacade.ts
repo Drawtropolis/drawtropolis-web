@@ -56,7 +56,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     plaqueRect: { top: 15.5, left: 36, width: 28, height: 6 },
   },
   Pharaoh: {
-    image: "/district-facades/pharaoh.jpg",
+    image: "/district-facades/pharaoh.png",
     alt: "Pharaoh district facade",
     gridRect: { top: 32, left: 18, width: 64, height: 52 },
     plaqueRect: { top: 22, left: 36, width: 28, height: 5.5 },
