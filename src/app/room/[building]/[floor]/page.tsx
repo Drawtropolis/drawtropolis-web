@@ -4,15 +4,25 @@ import { formatCoordinate } from "@/lib/types";
 import { getDistrictTheme, districtBackground } from "@/lib/districtTheme";
 
 // One floor: central lobby (implied, not rendered yet) + 100 rooms,
-// numbered 00-99 only — never three digits (matches the `rooms.room_number
-// between 0 and 99` DB constraint). Outer corridor = even 00-98 (50
-// rooms), inner corridor = odd 01-99 (50 rooms). Bug fixed 26 July 2026:
-// this used to generate length:56/44, which is wrong arithmetic (56+44=100
-// but 0,2,...,110 in 56 steps overshoots to 110, and 1,3,...,87 in 44
-// steps stops short of 99) — corrected to the actual even/odd split,
-// length:50 each, 0-98 and 1-99. Claimed rooms are the ones that actually
-// have a row in `rooms` — everything else is just an address waiting to
-// be claimed.
+// numbered 00-99, laid out as a single 10x10 grid in sequential order.
+// Claimed rooms are the ones that actually have a row in `rooms` —
+// everything else is just an address waiting to be claimed.
+//
+// Redesigned 26 July 2026 — the old version split the grid into an
+// "outer corridor (even)" / "inner corridor (odd)" pair, which was a
+// layout idea that never earned its keep: it made the numbering harder
+// to scan (doors 00-98 skip a beat, then 01-99 restart underneath) and
+// added two unlabelled-feeling section headers above a page that was
+// already fighting for visual hierarchy. Straight 00-99 in one 10x10
+// grid is simpler to scan and matches how the building/floor plaques
+// already present numbers elsewhere in the app.
+//
+// The header block above the grid was also flattened from a cramped
+// "DISTRICT / Name — Floor N / coordinate" stack into four clearly
+// separated lines — district (large, coloured per-district), building
+// name, floor number, coordinate prefix (small step up from the door
+// grid's own type size) — so the hierarchy reads at a glance instead of
+// running together.
 export default async function FloorPage({
   params,
 }: {
@@ -40,8 +50,7 @@ export default async function FloorPage({
     (claimedRooms ?? []).map((r) => [r.room_number, r]),
   );
 
-  const outer = Array.from({ length: 50 }, (_, i) => i * 2); // 0,2,...,98
-  const inner = Array.from({ length: 50 }, (_, i) => i * 2 + 1); // 1,3,...,99
+  const rooms = Array.from({ length: 100 }, (_, i) => i); // 0..99, in order
   const theme = getDistrictTheme(buildingRow?.collection);
 
   const roomLink = (roomNumber: number) => {
@@ -50,9 +59,9 @@ export default async function FloorPage({
       <Link
         key={roomNumber}
         href={`/room/${buildingId}/${floorNumber}/${roomNumber}`}
-        className={`rounded-lg px-2 py-3 text-center text-sm font-medium border hover:opacity-80 transition-opacity ${
+        className={`aspect-square flex items-center justify-center rounded-lg text-sm sm:text-base font-medium border transition-all hover:scale-105 hover:opacity-90 ${
           claimed
-            ? "border-[var(--foreground)] bg-[var(--panel)]"
+            ? "border-[var(--foreground)] bg-[var(--panel)] shadow-sm"
             : "border-[var(--border)] text-[var(--muted)]"
         }`}
         title={
@@ -60,6 +69,7 @@ export default async function FloorPage({
             ? `Claimed (${claimed.claim_type}, ${claimed.visibility})`
             : "Unclaimed"
         }
+        style={claimed ? { borderColor: theme?.accent ?? "var(--foreground)" } : undefined}
       >
         {String(roomNumber).padStart(2, "0")}
       </Link>
@@ -68,7 +78,7 @@ export default async function FloorPage({
 
   return (
     <main
-      className="min-h-screen p-8 max-w-4xl mx-auto"
+      className="min-h-screen p-8 max-w-3xl mx-auto"
       style={districtBackground(buildingRow?.collection)}
     >
       <Link
@@ -78,34 +88,29 @@ export default async function FloorPage({
         &larr; Back to {buildingRow?.name ?? `Building ${buildingId}`}
       </Link>
 
-      {buildingRow?.collection && (
-        <p
-          className="text-sm font-semibold tracking-widest uppercase mt-4"
-          style={{ color: theme?.accent ?? "var(--muted)" }}
-        >
-          {buildingRow.collection}
+      <div className="mt-4 mb-8">
+        {buildingRow?.collection && (
+          <p
+            className="text-3xl sm:text-4xl font-extrabold tracking-tight uppercase"
+            style={{ color: theme?.accent ?? "var(--foreground)" }}
+          >
+            {buildingRow.collection}
+          </p>
+        )}
+        <h1 className="text-xl sm:text-2xl font-semibold mt-1">
+          {buildingRow?.name ?? `Building ${buildingId}`}
+        </h1>
+        <p className="text-base sm:text-lg text-[var(--muted)] mt-0.5">
+          Floor {floorNumber}
         </p>
-      )}
-      <h1 className="text-3xl font-bold mt-1 mb-1">
-        {buildingRow?.name} — Floor {floorNumber}
-      </h1>
-      <p className="text-[var(--muted)] mb-8 text-sm">
-        Coordinate prefix: {formatCoordinate(buildingId, floorNumber, 0).slice(0, -3)}
-        xx
-      </p>
-
-      <h2 className="font-semibold text-sm text-[var(--muted)] mb-2 uppercase tracking-wide">
-        Outer corridor (even)
-      </h2>
-      <div className="grid grid-cols-8 sm:grid-cols-14 gap-1.5 mb-8">
-        {outer.map(roomLink)}
+        <p className="text-sm sm:text-base text-[var(--muted)] mt-2">
+          Coordinate prefix: {formatCoordinate(buildingId, floorNumber, 0).slice(0, -3)}
+          xx
+        </p>
       </div>
 
-      <h2 className="font-semibold text-sm text-[var(--muted)] mb-2 uppercase tracking-wide">
-        Inner corridor (odd)
-      </h2>
-      <div className="grid grid-cols-8 sm:grid-cols-11 gap-1.5">
-        {inner.map(roomLink)}
+      <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+        {rooms.map(roomLink)}
       </div>
     </main>
   );
