@@ -16,41 +16,33 @@ import { getDistrictTheme } from "@/lib/districtTheme";
 // New approach: the background image (`/city-map.png`) has no text or UI
 // baked in at all — just the illustrated city. Every interactive piece
 // (district name, hover prompt, building list, City Hall button) is real
-// HTML positioned on top, same percentage-rect technique as before, but
-// now nothing has to match baked pixels, so nothing can drift out of sync
-// with the art.
+// HTML positioned on top, so nothing has to match baked pixels.
 //
-// Rects below are carried over from the old COLLECTION_LAYOUT/CITY_HALL_RECT
-// in page.tsx — the new blank background is the same underlying composition
-// (Andrew asked for identical buildings/positions, just with the text
-// removed), so the same percentages should still land on the right building.
-// Nudge here if any label drifts off its district once it's live.
+// Second pass (same day): district labels moved from a "box + anchor pill
+// at the bottom" layout to a plain centre point per district. Andrew's
+// direction — labels can sit directly over the artwork, right on the main
+// monument, since the ring of building-name pills bursts outward from
+// wherever the label sits anyway. A bounding box was never necessary; a
+// point is simpler and makes per-district nudges (this session's other big
+// ask — move Crown right onto the castle door, Liberty under the statue,
+// Empire off the left edge onto the Colosseum, etc.) a one-line change.
 
-type Rect = { top: number; left: number; width: number; height: number };
+type Point = { top: number; left: number };
 
-const DISTRICT_LABEL_RECT: Record<string, Rect> = {
-  Crown: { top: 26.2, left: 0.3, width: 14.5, height: 18.8 },
-  Olympus: { top: 28.1, left: 20.7, width: 14.3, height: 18.8 },
-  Liberty: { top: 46.7, left: 0.5, width: 14, height: 19.5 },
-  Sakura: { top: 29.6, left: 67.8, width: 14.3, height: 17.3 },
-  Pharaoh: { top: 27.8, left: 85.3, width: 14.3, height: 19.5 },
-  Valhalla: { top: 48.3, left: 83.9, width: 14.3, height: 18.1 },
-  Empire: { top: 69.1, left: 0.5, width: 14, height: 19.5 },
-  Dynasty: { top: 67.2, left: 33.1, width: 13.8, height: 21.2 },
-  Renaissance: { top: 68.4, left: 54.6, width: 12, height: 18.1 },
-  Oasis: { top: 70.1, left: 85.2, width: 14.3, height: 16.3 },
+const DISTRICT_LABEL_CENTER: Record<string, Point> = {
+  Crown: { top: 40, left: 11 },
+  Olympus: { top: 44, left: 28 },
+  Liberty: { top: 58, left: 17 },
+  Sakura: { top: 40, left: 70 },
+  Pharaoh: { top: 42, left: 88 },
+  Valhalla: { top: 52, left: 88 },
+  Empire: { top: 78, left: 13 },
+  Dynasty: { top: 85, left: 40 },
+  Renaissance: { top: 84, left: 60 },
+  Oasis: { top: 80, left: 88 },
 };
 
-const CITY_HALL_RECT: Rect = { top: 37.1, left: 41.8, width: 16.8, height: 21 };
-
-function pct(r: Rect) {
-  return {
-    top: `${r.top}%`,
-    left: `${r.left}%`,
-    width: `${r.width}%`,
-    height: `${r.height}%`,
-  } as const;
-}
+const CITY_HALL_CENTER: Point = { top: 58, left: 50 };
 
 export function CityMap({
   buildings,
@@ -73,7 +65,7 @@ export function CityMap({
     <div
       className="relative w-full aspect-[3/2] overflow-hidden rounded-2xl border border-[var(--border)]"
       onClick={(e) => {
-        // Click anywhere outside a district's own button/card closes it.
+        // Click anywhere outside a district's own button/ring closes it.
         if (e.target === e.currentTarget) setOpenDistrict(null);
       }}
     >
@@ -88,45 +80,44 @@ export function CityMap({
       {/* City Hall — always open to everyone, no hover-gate like the districts */}
       {cityHall && (
         <div
-          className="absolute z-20 flex flex-col items-center justify-end pb-3 pointer-events-none"
-          style={pct(CITY_HALL_RECT)}
+          className="absolute z-20 -translate-x-1/2 -translate-y-1/2"
+          style={{ top: `${CITY_HALL_CENTER.top}%`, left: `${CITY_HALL_CENTER.left}%` }}
         >
           <Link
             href={`/building/${cityHall.id}`}
-            className="pointer-events-auto rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-1.5 sm:py-2 shadow-lg transition-colors"
+            className="rounded-full bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-1.5 sm:py-2 shadow-lg transition-colors whitespace-nowrap"
           >
             Enter City Hall
           </Link>
         </div>
       )}
 
-      {/* District labels — pills, not circles (reverted per feedback). Hover
-          reveals "Explore this district"; click scatters all 10 building
-          names as their own small pills in a ring around the district
-          pill, rather than one dropdown list. Positions are computed (even
-          angle spacing around a fixed radius), not hand-placed per
-          building — that's the only way this works for 100 buildings
-          without positioning each one by hand. Pills for districts right at
-          the map edge (Pharaoh, Oasis) can clip against the container edge
-          since the ring is centred on the district regardless of how close
-          it sits to the border — flag if that looks bad live and the
-          radius/edge districts can get a smaller ring.
-          The open district still gets bumped to z-40 so its ring renders
-          above every other district's pill. */}
+      {/* District labels — pills, centred exactly on a point over the
+          monument. Click bursts all 10 building names outward as their own
+          small pills in a ring, evenly spaced by angle (not hand-placed
+          per building — the only way this scales to 100 buildings without
+          positioning each one). Ring radius bumped up from the first pass
+          so pills don't crowd each other at the top of the circle.
+          The open district gets bumped to z-40 so its ring renders above
+          every other district's pill regardless of DOM order. */}
       {Array.from(collections.entries()).map(([name, list]) => {
-        const rect = DISTRICT_LABEL_RECT[name];
-        if (!rect || list.length === 0) return null;
+        const point = DISTRICT_LABEL_CENTER[name];
+        if (!point || list.length === 0) return null;
         const isOpen = openDistrict === name;
         const theme = getDistrictTheme(name);
-        const ringRadius = 90;
+        const ringRadius = 120;
 
         return (
           <div
             key={name}
-            className="absolute flex flex-col items-center justify-end pb-2 pointer-events-none"
-            style={{ ...pct(rect), zIndex: isOpen ? 40 : 20 }}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{
+              top: `${point.top}%`,
+              left: `${point.left}%`,
+              zIndex: isOpen ? 40 : 20,
+            }}
           >
-            <div className="group relative pointer-events-auto">
+            <div className="group relative">
               <button
                 type="button"
                 onClick={() => setOpenDistrict(isOpen ? null : name)}
