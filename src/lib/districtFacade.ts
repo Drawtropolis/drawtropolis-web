@@ -59,7 +59,7 @@ export const DISTRICT_FACADE: Record<string, FacadeConfig | null> = {
     image: "/district-facades/pharaoh.jpg",
     alt: "Pharaoh district facade",
     gridRect: { top: 32, left: 18, width: 64, height: 52 },
-    plaqueRect: { top: 15.5, left: 36, width: 28, height: 6 },
+    plaqueRect: { top: 26, left: 34, width: 32, height: 6 },
   },
   // No facade art yet — building-page.tsx falls back to the original
   // plain grid for this district until an image is added here.
