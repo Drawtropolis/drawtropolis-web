@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatCoordinate } from "@/lib/types";
+import { getDistrictTheme, districtBackground } from "@/lib/districtTheme";
 
 // One floor: central lobby (implied, not rendered yet) + 100 rooms,
 // numbered 00-99 only — never three digits (matches the `rooms.room_number
@@ -23,7 +24,11 @@ export default async function FloorPage({
   const supabase = await createClient();
 
   const [{ data: buildingRow }, { data: claimedRooms }] = await Promise.all([
-    supabase.from("buildings").select("id, name").eq("id", buildingId).single(),
+    supabase
+      .from("buildings")
+      .select("id, name, collection")
+      .eq("id", buildingId)
+      .single(),
     supabase
       .from("rooms")
       .select("room_number, visibility, claim_type")
@@ -37,6 +42,7 @@ export default async function FloorPage({
 
   const outer = Array.from({ length: 50 }, (_, i) => i * 2); // 0,2,...,98
   const inner = Array.from({ length: 50 }, (_, i) => i * 2 + 1); // 1,3,...,99
+  const theme = getDistrictTheme(buildingRow?.collection);
 
   const roomLink = (roomNumber: number) => {
     const claimed = claimedByNumber.get(roomNumber);
@@ -44,8 +50,10 @@ export default async function FloorPage({
       <Link
         key={roomNumber}
         href={`/room/${buildingId}/${floorNumber}/${roomNumber}`}
-        className={`border rounded px-2 py-2 text-center text-xs hover:bg-neutral-50 ${
-          claimed ? "border-neutral-800 font-medium" : "border-neutral-200 text-neutral-400"
+        className={`rounded-lg px-2 py-3 text-center text-sm font-medium border hover:opacity-80 transition-opacity ${
+          claimed
+            ? "border-[var(--foreground)] bg-[var(--panel)]"
+            : "border-[var(--border)] text-[var(--muted)]"
         }`}
         title={
           claimed
@@ -59,32 +67,44 @@ export default async function FloorPage({
   };
 
   return (
-    <main className="min-h-screen p-8 max-w-3xl mx-auto">
+    <main
+      className="min-h-screen p-8 max-w-4xl mx-auto"
+      style={districtBackground(buildingRow?.collection)}
+    >
       <Link
         href={`/building/${buildingId}`}
-        className="text-sm text-neutral-500 hover:underline"
+        className="text-sm text-[var(--muted)] hover:underline"
       >
         &larr; Back to {buildingRow?.name ?? `Building ${buildingId}`}
       </Link>
-      <h1 className="text-2xl font-semibold mt-2 mb-1">
+
+      {buildingRow?.collection && (
+        <p
+          className="text-sm font-semibold tracking-widest uppercase mt-4"
+          style={{ color: theme?.accent ?? "var(--muted)" }}
+        >
+          {buildingRow.collection}
+        </p>
+      )}
+      <h1 className="text-3xl font-bold mt-1 mb-1">
         {buildingRow?.name} — Floor {floorNumber}
       </h1>
-      <p className="text-neutral-500 mb-6 text-sm">
+      <p className="text-[var(--muted)] mb-8 text-sm">
         Coordinate prefix: {formatCoordinate(buildingId, floorNumber, 0).slice(0, -3)}
         xx
       </p>
 
-      <h2 className="font-medium text-sm text-neutral-500 mb-2">
+      <h2 className="font-semibold text-sm text-[var(--muted)] mb-2 uppercase tracking-wide">
         Outer corridor (even)
       </h2>
-      <div className="grid grid-cols-8 sm:grid-cols-14 gap-1 mb-6">
+      <div className="grid grid-cols-8 sm:grid-cols-14 gap-1.5 mb-8">
         {outer.map(roomLink)}
       </div>
 
-      <h2 className="font-medium text-sm text-neutral-500 mb-2">
+      <h2 className="font-semibold text-sm text-[var(--muted)] mb-2 uppercase tracking-wide">
         Inner corridor (odd)
       </h2>
-      <div className="grid grid-cols-8 sm:grid-cols-11 gap-1">
+      <div className="grid grid-cols-8 sm:grid-cols-11 gap-1.5">
         {inner.map(roomLink)}
       </div>
     </main>

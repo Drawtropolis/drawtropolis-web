@@ -128,7 +128,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="bg-[#0a1220]">
+    <main className="bg-[var(--background)]">
       <div className="relative w-full aspect-[1536/1024] overflow-hidden">
         <Image
           src="/hero-city.png"

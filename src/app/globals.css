@@ -1,8 +1,32 @@
 @import "tailwindcss";
 
+/* Theme system — rebuilt 26 July 2026. Used to be prefers-color-scheme
+   only, meaning the site had no manual light/dark control at all — it
+   just silently followed whatever mode the visitor's OS was in, with no
+   toggle anywhere. That's why the whole site (and, worse, the drawing
+   canvas) was always dark for anyone on a dark-mode device, with strokes
+   drawn in near-black on a transparent Stage — invisible. Now driven by
+   a `data-theme` attribute on <html>, set by ThemeToggle.tsx and
+   persisted to localStorage, with prefers-color-scheme used only as the
+   very first, pre-toggle default (see the inline script in layout.tsx
+   that sets the attribute before paint, avoiding a flash of the wrong
+   theme). --panel/--border/--muted are new — added so every page could
+   move off hardcoded Tailwind neutral-* classes, which only ever looked
+   right in one of the two modes. */
 :root {
+  --background: #0a1220;
+  --foreground: #f2f2f2;
+  --muted: #9aa4b2;
+  --border: #2a3444;
+  --panel: #121b2c;
+}
+
+[data-theme="light"] {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #14181f;
+  --muted: #667085;
+  --border: #e2e5ea;
+  --panel: #f5f6f8;
 }
 
 @theme inline {
@@ -12,15 +36,9 @@
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }

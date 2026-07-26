@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { UserBadge } from "@/components/UserBadge";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Deliberately not using next/font/google (Geist) — it fetches from
 // fonts.googleapis.com at build time, which fails in network-restricted
@@ -76,8 +77,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
+      <head>
+        {/* Applies the saved (or system-default) theme before first
+            paint. Without this, the page would render in the default
+            dark theme for a frame and then flash to light for anyone
+            who'd previously chosen light mode. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('drawtropolis-theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col font-sans">
-        <UserBadge />
+        <div className="w-full flex items-center justify-end gap-2 px-4 py-2">
+          <ThemeToggle />
+          <UserBadge />
+        </div>
         {children}
       </body>
     </html>

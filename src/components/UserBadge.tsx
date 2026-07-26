@@ -38,7 +38,7 @@ export function UserBadge() {
   if (email === undefined) return null;
 
   return (
-    <div className="w-full flex justify-end px-4 py-2 text-xs text-neutral-400 gap-3">
+    <div className="flex items-center gap-3 text-xs text-[var(--muted)]">
       {email ? (
         <>
           <span>Signed in as {email}</span>

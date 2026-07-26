@@ -82,10 +82,10 @@ export default function SignInPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-8 bg-[#0a1220]">
+    <main className="min-h-screen flex items-center justify-center p-8">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-white mb-1">Sign in</h1>
-        <p className="text-white/60 text-sm mb-6">
+        <h1 className="text-2xl font-semibold mb-1">Sign in</h1>
+        <p className="text-[var(--muted)] text-sm mb-6">
           No password needed — we&apos;ll email you a link, or continue with
           Google.
         </p>
@@ -100,15 +100,15 @@ export default function SignInPage() {
               type="button"
               onClick={handleGoogle}
               disabled={googleLoading}
-              className="w-full rounded bg-white hover:bg-neutral-100 text-neutral-900 text-sm font-medium px-4 py-2 disabled:opacity-50 mb-4"
+              className="w-full rounded bg-white hover:bg-neutral-100 text-neutral-900 text-sm font-medium px-4 py-2 disabled:opacity-50 mb-4 border border-[var(--border)]"
             >
               {googleLoading ? "Redirecting…" : "Continue with Google"}
             </button>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-px flex-1 bg-white/15" />
-              <span className="text-xs text-white/40">or</span>
-              <div className="h-px flex-1 bg-white/15" />
+              <div className="h-px flex-1 bg-[var(--border)]" />
+              <span className="text-xs text-[var(--muted)]">or</span>
+              <div className="h-px flex-1 bg-[var(--border)]" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3">
@@ -118,7 +118,7 @@ export default function SignInPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full rounded bg-white/10 border border-white/25 text-white placeholder-white/40 px-3 py-2 text-sm outline-none focus:border-white/60"
+                className="w-full rounded bg-[var(--panel)] border border-[var(--border)] text-[var(--foreground)] placeholder-[var(--muted)] px-3 py-2 text-sm outline-none focus:border-[var(--foreground)]"
               />
               <button
                 type="submit"

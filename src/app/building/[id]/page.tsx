@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getDistrictTheme, districtBackground } from "@/lib/districtTheme";
 
 // Floors are NOT a database table (see schema note in
 // drawtropolis_initial_schema.sql — they carry no data of their own until
@@ -25,24 +26,38 @@ export default async function BuildingPage({
   if (!building) notFound();
 
   const floors = Array.from({ length: 100 }, (_, i) => i + 1);
+  const theme = getDistrictTheme(building.collection);
 
   return (
-    <main className="min-h-screen p-8 max-w-3xl mx-auto">
-      <Link href="/" className="text-sm text-neutral-500 hover:underline">
+    <main
+      className="min-h-screen p-8 max-w-4xl mx-auto"
+      style={districtBackground(building.collection)}
+    >
+      <Link href="/" className="text-sm text-[var(--muted)] hover:underline">
         &larr; Back to the city
       </Link>
-      <h1 className="text-2xl font-semibold mt-2 mb-1">{building.name}</h1>
+
+      {building.collection && (
+        <p
+          className="text-sm font-semibold tracking-widest uppercase mt-4"
+          style={{ color: theme?.accent ?? "var(--muted)" }}
+        >
+          {building.collection}
+        </p>
+      )}
+      <h1 className="text-4xl font-bold mt-1 mb-1">{building.name}</h1>
       {building.is_special && (
-        <p className="text-neutral-500 mb-6 text-sm">
+        <p className="text-[var(--muted)] mb-6 text-sm">
           Public landmark — open to everyone, no claim required.
         </p>
       )}
-      <div className="grid grid-cols-6 sm:grid-cols-10 gap-2 mt-6">
+
+      <div className="grid grid-cols-6 sm:grid-cols-10 gap-2 mt-8">
         {floors.map((floor) => (
           <Link
             key={floor}
             href={`/room/${building.id}/${floor}`}
-            className="border rounded px-2 py-3 text-center text-sm hover:bg-neutral-50"
+            className="rounded-lg px-2 py-4 text-center text-base font-medium border border-[var(--border)] bg-[var(--panel)] hover:opacity-80 transition-opacity"
           >
             {floor}
           </Link>

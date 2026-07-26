@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { formatCoordinate } from "@/lib/types";
 import { ClaimRoomButton } from "@/components/ClaimRoomButton";
 import { RoomCanvas } from "@/components/RoomCanvasLoader";
+import { getDistrictTheme, districtBackground } from "@/lib/districtTheme";
 
 export default async function RoomPage({
   params,
@@ -18,7 +20,7 @@ export default async function RoomPage({
   const [{ data: buildingRow }, { data: roomRow }] = await Promise.all([
     supabase
       .from("buildings")
-      .select("name, is_special")
+      .select("name, is_special, collection")
       .eq("id", buildingId)
       .single(),
     supabase
@@ -40,51 +42,66 @@ export default async function RoomPage({
   // Fixed: special buildings always show the canvas, no room row and no
   // sign-in required.
   const isOpenToEveryone = buildingRow?.is_special === true;
+  const theme = getDistrictTheme(buildingRow?.collection);
 
   return (
-    <main className="min-h-screen p-8 max-w-3xl mx-auto">
+    <main
+      className="min-h-screen p-8 max-w-3xl mx-auto"
+      style={districtBackground(buildingRow?.collection)}
+    >
       <Link
         href={`/room/${buildingId}/${floorNumber}`}
-        className="text-sm text-neutral-500 hover:underline"
+        className="text-sm text-[var(--muted)] hover:underline"
       >
         &larr; Back to floor {floorNumber}
       </Link>
-      <h1 className="text-2xl font-semibold mt-2 mb-1">
+
+      {buildingRow?.collection && (
+        <p
+          className="text-sm font-semibold tracking-widest uppercase mt-4"
+          style={{ color: theme?.accent ?? "var(--muted)" }}
+        >
+          {buildingRow.collection}
+        </p>
+      )}
+      <h1 className="text-3xl font-bold mt-1 mb-1">
         {buildingRow?.name}, Room {String(roomNumber).padStart(2, "0")}
       </h1>
-      <p className="text-neutral-500 mb-6 text-sm">{coordinate}</p>
+      <p className="text-[var(--muted)] mb-6 text-sm">{coordinate}</p>
 
       {isOpenToEveryone ? (
         <>
-          <p className="text-sm text-neutral-500 mb-4">
+          <p className="text-sm text-[var(--muted)] mb-4">
             Open to everyone · no claim needed
           </p>
           <RoomCanvas />
-          <p className="text-xs text-neutral-400 mt-2">
+          <p className="text-xs text-[var(--muted)] mt-2">
             Drawing is local-only right now — not yet saved or synced. See
             the RoomCanvas component notes.
           </p>
         </>
       ) : !roomRow ? (
-        <div className="border border-dashed rounded p-6 text-center">
-          <p className="text-neutral-500 mb-4">
+        <div className="border border-dashed border-[var(--border)] rounded-lg p-6 text-center bg-[var(--panel)]">
+          <p className="text-[var(--muted)] mb-4">
             This room hasn&apos;t been claimed yet.
           </p>
-          <ClaimRoomButton
-            buildingId={buildingId}
-            floorNumber={floorNumber}
-            roomNumber={roomNumber}
-            claimType="standard"
-          />
+          <Suspense fallback={null}>
+            <ClaimRoomButton
+              buildingId={buildingId}
+              floorNumber={floorNumber}
+              roomNumber={roomNumber}
+              claimType="standard"
+            />
+          </Suspense>
         </div>
       ) : (
         <>
-          <p className="text-sm text-neutral-500 mb-4">
+          <p className="text-sm text-[var(--muted)] mb-4">
             {roomRow.visibility === "locked" ? "Locked" : "Open"} ·{" "}
             {roomRow.claim_type} · cap {roomRow.contributor_cap}
           </p>
           <RoomCanvas />
-          <p className="text-xs text-neutral-400 mt-2">
+          <p className="text-xs text-[var(--muted)] mt-2">
             Drawing is local-only right now — not yet saved or synced. See
             the RoomCanvas component notes.
           </p>
