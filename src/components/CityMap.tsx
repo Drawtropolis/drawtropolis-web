@@ -34,7 +34,7 @@ const DISTRICT_LABEL_CENTER: Record<string, Point> = {
   Olympus: { top: 44, left: 28 },
   Liberty: { top: 58, left: 17 },
   Sakura: { top: 40, left: 70 },
-  Pharaoh: { top: 42, left: 88 },
+  Pharaoh: { top: 34, left: 88 },
   Valhalla: { top: 52, left: 88 },
   Empire: { top: 78, left: 13 },
   Dynasty: { top: 85, left: 40 },
