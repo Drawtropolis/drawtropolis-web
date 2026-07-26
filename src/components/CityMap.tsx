@@ -100,18 +100,25 @@ export function CityMap({
         </div>
       )}
 
-      {/* District labels — hover reveals "Explore this district", click opens the building list.
-          Circular bubbles per Andrew's feedback (was an oval pill before).
-          The open district gets bumped to z-40 — with every district at the
-          same base layer, whichever one happened to come later in the list
-          (e.g. Valhalla after Pharaoh) would paint on top of a neighbour's
-          open card. Bumping only the open one above the rest fixes that
-          without needing to reorder anything. */}
+      {/* District labels — pills, not circles (reverted per feedback). Hover
+          reveals "Explore this district"; click scatters all 10 building
+          names as their own small pills in a ring around the district
+          pill, rather than one dropdown list. Positions are computed (even
+          angle spacing around a fixed radius), not hand-placed per
+          building — that's the only way this works for 100 buildings
+          without positioning each one by hand. Pills for districts right at
+          the map edge (Pharaoh, Oasis) can clip against the container edge
+          since the ring is centred on the district regardless of how close
+          it sits to the border — flag if that looks bad live and the
+          radius/edge districts can get a smaller ring.
+          The open district still gets bumped to z-40 so its ring renders
+          above every other district's pill. */}
       {Array.from(collections.entries()).map(([name, list]) => {
         const rect = DISTRICT_LABEL_RECT[name];
         if (!rect || list.length === 0) return null;
         const isOpen = openDistrict === name;
         const theme = getDistrictTheme(name);
+        const ringRadius = 90;
 
         return (
           <div
@@ -123,7 +130,7 @@ export function CityMap({
               <button
                 type="button"
                 onClick={() => setOpenDistrict(isOpen ? null : name)}
-                className="flex items-center justify-center text-center rounded-full bg-black/65 group-hover:bg-black/85 group-hover:scale-105 text-white font-bold uppercase leading-tight shadow-lg transition-all backdrop-blur-sm border w-16 h-16 sm:w-20 sm:h-20 text-[9px] sm:text-[11px] p-1"
+                className="rounded-full bg-black/65 group-hover:bg-black/85 group-hover:scale-105 text-white text-[11px] sm:text-sm font-bold uppercase tracking-wide px-3 sm:px-4 py-1 sm:py-1.5 shadow-lg transition-all backdrop-blur-sm border whitespace-nowrap"
                 style={{ borderColor: theme?.accent ?? "rgba(255,255,255,0.3)" }}
               >
                 {name}
@@ -136,24 +143,25 @@ export function CityMap({
               )}
 
               {isOpen && (
-                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-44 rounded-lg border border-white/10 bg-[#0a1220]/95 backdrop-blur-md shadow-2xl p-2 text-left">
-                  <p
-                    className="text-[10px] uppercase tracking-wide px-2 pb-1 font-semibold"
-                    style={{ color: theme?.accent ?? "rgba(255,255,255,0.6)" }}
-                  >
-                    {name} district
-                  </p>
-                  <div className="max-h-48 overflow-y-auto">
-                    {list.map((b) => (
+                <div className="absolute left-1/2 top-1/2 w-0 h-0">
+                  {list.map((b, i) => {
+                    const angle = (i / list.length) * 2 * Math.PI - Math.PI / 2;
+                    const x = Math.round(Math.cos(angle) * ringRadius);
+                    const y = Math.round(Math.sin(angle) * ringRadius);
+                    return (
                       <Link
                         key={b.id}
                         href={`/building/${b.id}`}
-                        className="block rounded px-2 py-1 text-sm text-white/90 hover:bg-white/10"
+                        className="absolute rounded-full border bg-[#0a1220]/95 text-white text-[10px] sm:text-[11px] font-medium px-2.5 py-1 shadow-lg hover:bg-black whitespace-nowrap transition-colors"
+                        style={{
+                          transform: `translate(-50%, -50%) translate(${x}px, ${y}px)`,
+                          borderColor: theme?.accent ?? "rgba(255,255,255,0.3)",
+                        }}
                       >
                         {b.name}
                       </Link>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
