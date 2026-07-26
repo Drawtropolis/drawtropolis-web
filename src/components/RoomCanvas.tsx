@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Stage, Layer, Line, Rect } from "react-konva";
+import type Konva from "konva";
 
 // Placeholder canvas — proves Konva renders and captures strokes client
 // side. NOT wired to Supabase Realtime or the strokes table yet: no
@@ -20,59 +21,170 @@ import { Stage, Layer, Line, Rect } from "react-konva";
 // now"). Fixed with an explicit white Rect behind the strokes, like a
 // sheet of paper, so drawings stay visible regardless of whether the
 // site itself is in light or dark mode.
-const WIDTH = 600;
-const HEIGHT = 400;
+//
+// Doubled in size (26 July, same day) — 600x400 read as a small sticky
+// note next to the "100 floors, 1000 rooms, each floor is your canvas"
+// framing everywhere else on the site; 1200x800 actually reads as a
+// canvas. Zoom added at the same time since a bigger drawing surface with
+// no way to zoom in just means more empty white space on screen, not
+// more room to actually draw detail — mouse wheel / trackpad pinch zooms
+// around the pointer, and the +/-/Reset buttons cover the case where
+// scroll-to-zoom isn't obvious or the input device doesn't support it.
+const BASE_WIDTH = 1200;
+const BASE_HEIGHT = 800;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 4;
+const VIEWPORT_WIDTH = 900;
+const VIEWPORT_HEIGHT = 600;
 
 export function RoomCanvas() {
   const [lines, setLines] = useState<number[][]>([]);
   const [drawing, setDrawing] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [stagePos, setStagePos] = useState({ x: 0, y: 0 });
+  const stageRef = useRef<Konva.Stage>(null);
+
+  function clampZoom(z: number) {
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z));
+  }
+
+  function zoomAtPoint(newZoom: number, pointer: { x: number; y: number }) {
+    const stage = stageRef.current;
+    if (!stage) {
+      setZoom(newZoom);
+      return;
+    }
+    const oldZoom = stage.scaleX();
+    const mousePointTo = {
+      x: (pointer.x - stage.x()) / oldZoom,
+      y: (pointer.y - stage.y()) / oldZoom,
+    };
+    setZoom(newZoom);
+    setStagePos({
+      x: pointer.x - mousePointTo.x * newZoom,
+      y: pointer.y - mousePointTo.y * newZoom,
+    });
+  }
+
+  function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
+    e.evt.preventDefault();
+    const stage = stageRef.current;
+    const pointer = stage?.getPointerPosition();
+    if (!pointer) return;
+    const direction = e.evt.deltaY > 0 ? -1 : 1;
+    zoomAtPoint(clampZoom(zoom + direction * 0.15), pointer);
+  }
+
+  function stepZoom(delta: number) {
+    zoomAtPoint(clampZoom(zoom + delta), {
+      x: VIEWPORT_WIDTH / 2,
+      y: VIEWPORT_HEIGHT / 2,
+    });
+  }
+
+  function resetView() {
+    setZoom(1);
+    setStagePos({ x: 0, y: 0 });
+  }
+
+  // Convert a pointer position on the (possibly zoomed/panned) stage back
+  // into the untransformed drawing coordinate space, so strokes stay
+  // pinned to the paper under the cursor instead of drifting once zoomed.
+  function toCanvasPoint(stage: Konva.Stage) {
+    const pos = stage.getPointerPosition();
+    if (!pos) return null;
+    return {
+      x: (pos.x - stage.x()) / stage.scaleX(),
+      y: (pos.y - stage.y()) / stage.scaleY(),
+    };
+  }
 
   return (
     <div className="inline-block rounded-lg overflow-hidden shadow-lg border border-[var(--border)]">
-      <Stage
-        width={WIDTH}
-        height={HEIGHT}
-        onMouseDown={(e) => {
-          setDrawing(true);
-          const pos = e.target.getStage()?.getPointerPosition();
-          if (pos) setLines((prev) => [...prev, [pos.x, pos.y]]);
-        }}
-        onMouseMove={(e) => {
-          if (!drawing) return;
-          const pos = e.target.getStage()?.getPointerPosition();
-          if (!pos) return;
-          setLines((prev) => {
-            const next = [...prev];
-            const last = next[next.length - 1];
-            next[next.length - 1] = [...last, pos.x, pos.y];
-            return next;
-          });
-        }}
-        onMouseUp={() => setDrawing(false)}
+      <div
+        style={{ width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT }}
+        className="max-w-full overflow-hidden bg-[#0a0e14]"
       >
-        <Layer>
-          <Rect x={0} y={0} width={WIDTH} height={HEIGHT} fill="#ffffff" />
-          {lines.map((points, i) => (
-            <Line
-              key={i}
-              points={points}
-              stroke="#111"
-              strokeWidth={2}
-              tension={0.5}
-              lineCap="round"
-              lineJoin="round"
-            />
-          ))}
-        </Layer>
-      </Stage>
-      {lines.length > 0 && (
-        <button
-          onClick={() => setLines([])}
-          className="w-full text-xs py-1.5 bg-[var(--panel)] text-[var(--muted)] hover:opacity-80"
+        <Stage
+          ref={stageRef}
+          width={VIEWPORT_WIDTH}
+          height={VIEWPORT_HEIGHT}
+          scaleX={zoom}
+          scaleY={zoom}
+          x={stagePos.x}
+          y={stagePos.y}
+          onWheel={handleWheel}
+          onMouseDown={(e) => {
+            setDrawing(true);
+            const point = toCanvasPoint(e.target.getStage()!);
+            if (point) setLines((prev) => [...prev, [point.x, point.y]]);
+          }}
+          onMouseMove={(e) => {
+            if (!drawing) return;
+            const point = toCanvasPoint(e.target.getStage()!);
+            if (!point) return;
+            setLines((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              next[next.length - 1] = [...last, point.x, point.y];
+              return next;
+            });
+          }}
+          onMouseUp={() => setDrawing(false)}
         >
-          Clear
-        </button>
-      )}
+          <Layer>
+            <Rect x={0} y={0} width={BASE_WIDTH} height={BASE_HEIGHT} fill="#ffffff" />
+            {lines.map((points, i) => (
+              <Line
+                key={i}
+                points={points}
+                stroke="#111"
+                strokeWidth={2}
+                tension={0.5}
+                lineCap="round"
+                lineJoin="round"
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-[var(--panel)]">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => stepZoom(-0.25)}
+            className="w-7 h-7 rounded text-[var(--muted)] hover:opacity-80 border border-[var(--border)]"
+            aria-label="Zoom out"
+          >
+            −
+          </button>
+          <span className="text-xs text-[var(--muted)] w-12 text-center">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button
+            onClick={() => stepZoom(0.25)}
+            className="w-7 h-7 rounded text-[var(--muted)] hover:opacity-80 border border-[var(--border)]"
+            aria-label="Zoom in"
+          >
+            +
+          </button>
+          <button
+            onClick={resetView}
+            className="text-xs px-2 h-7 rounded text-[var(--muted)] hover:opacity-80 border border-[var(--border)]"
+          >
+            Reset
+          </button>
+        </div>
+
+        {lines.length > 0 && (
+          <button
+            onClick={() => setLines([])}
+            className="text-xs px-2 h-7 rounded text-[var(--muted)] hover:opacity-80 border border-[var(--border)]"
+          >
+            Clear
+          </button>
+        )}
+      </div>
     </div>
   );
 }

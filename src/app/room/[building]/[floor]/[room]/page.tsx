@@ -88,6 +88,64 @@ export default async function RoomPage({
     : roomRow?.host;
   const claimantName = hostProfile?.username?.trim() || "A builder";
 
+  // City Hall's "open to everyone" room used to render inside the same
+  // 420px-wide door card as every claimed/unclaimed room — so walking in
+  // just showed a small canvas squeezed into a doorway-shaped box, and it
+  // never actually felt like you'd gone anywhere ("displaying over the
+  // room entrance and you're not going inside it"). The door card exists
+  // to dramatise claiming a room; City Hall has nothing to claim, so it
+  // gets a plain header instead and the canvas is the main event,
+  // breaking out of the narrow door width entirely rather than being
+  // boxed inside it. Claimed/unclaimed rooms are untouched below.
+  if (isOpenToEveryone) {
+    return (
+      <main
+        className="min-h-screen p-8 flex flex-col items-center"
+        style={districtBackground(buildingRow?.collection)}
+      >
+        <div className="w-full max-w-[420px]">
+          <Link
+            href={`/room/${buildingId}/${floorNumber}`}
+            className="text-sm text-[var(--muted)] hover:underline"
+          >
+            &larr; Back to floor {floorNumber}
+          </Link>
+        </div>
+
+        <div className="text-center mt-6">
+          {buildingRow?.collection && (
+            <p
+              className="text-sm font-semibold tracking-[0.2em] uppercase"
+              style={{ color: theme?.accent ?? "var(--muted)" }}
+            >
+              {buildingRow.collection}
+            </p>
+          )}
+          <h1 className="text-4xl font-bold mt-2 leading-tight">
+            {buildingRow?.name}
+          </h1>
+          <p className="text-base text-[var(--foreground)] opacity-70 mt-2">
+            Floor {floorNumber}
+          </p>
+          <p className="text-xs uppercase tracking-[0.15em] text-[var(--muted)] font-mono mt-1">
+            {coordinate}
+          </p>
+          <p className="text-sm text-[var(--muted)] mt-3">
+            Open to everyone · no claim needed
+          </p>
+        </div>
+
+        <div className="mt-8">
+          <RoomCanvas />
+        </div>
+        <p className="text-xs text-[var(--muted)] mt-3">
+          Drawing is local-only right now — not yet saved or synced. See the
+          RoomCanvas component notes.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main
       className="min-h-screen p-8 flex flex-col items-center"
@@ -130,18 +188,7 @@ export default async function RoomPage({
             {coordinate}
           </p>
 
-          {isOpenToEveryone ? (
-            <div className="mt-10">
-              <p className="text-sm text-[var(--muted)] mb-4">
-                Open to everyone · no claim needed
-              </p>
-              <RoomCanvas />
-              <p className="text-xs text-[var(--muted)] mt-2">
-                Drawing is local-only right now — not yet saved or synced.
-                See the RoomCanvas component notes.
-              </p>
-            </div>
-          ) : !roomRow ? (
+          {!roomRow ? (
             // Unclaimed plaque — dull pewter. Deliberately theme-independent:
             // a plaque doesn't take on the district's colour, only its own
             // finish. Local CSS-variable overrides give ClaimRoomButton
