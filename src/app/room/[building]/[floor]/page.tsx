@@ -59,17 +59,27 @@ export default async function FloorPage({
       <Link
         key={roomNumber}
         href={`/room/${buildingId}/${floorNumber}/${roomNumber}`}
-        className={`aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg lg:text-xl font-medium border transition-all hover:scale-105 hover:opacity-90 ${
-          claimed
-            ? "border-[var(--foreground)] bg-[var(--panel)] shadow-sm"
-            : "border-[var(--border)] text-[var(--muted)]"
-        }`}
+        className="aspect-square flex items-center justify-center rounded-lg text-base sm:text-lg lg:text-xl font-medium border transition-all hover:scale-105 hover:opacity-90"
         title={
           claimed
             ? `Claimed (${claimed.claim_type}, ${claimed.visibility})`
             : "Unclaimed"
         }
-        style={claimed ? { borderColor: theme?.accent ?? "var(--foreground)" } : undefined}
+        style={
+          claimed
+            ? {
+                // Gold/brass, matching the claimed-room plaque exactly —
+                // deliberately theme-independent (see the plaque itself)
+                // so a claimed room reads the same regardless of which
+                // district it's in: at a glance, gold means taken.
+                background:
+                  "linear-gradient(180deg, #ecd9a0 0%, #c9a24c 45%, #a9813a 100%)",
+                borderColor: "#8a6b30",
+                color: "#2b2008",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
+              }
+            : { borderColor: "var(--border)", color: "var(--muted)" }
+        }
       >
         {String(roomNumber).padStart(2, "0")}
       </Link>
